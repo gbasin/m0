@@ -26,30 +26,30 @@ def compute_reward(final_answer, ground_truth):
     print(f"Comparing answer: '{final_answer}' with ground truth: '{ground_truth}'")  # Debug print
     return 1.0 if final_answer and final_answer.lower() == ground_truth.lower() else 0.0
 
-def rollout_episode(model, tokenizer, question, ground_truth, max_steps=3, step_tokens=30):
+def rollout_episode(model, tokenizer, question, ground_truth, max_steps=3, step_tokens=10):
     """
     Multi-step rollout with a small model
     """
     transitions = []
     
     # Simpler prompt format for a smaller model
-    state_text = f"""Let me solve problems step by step.
+    state_text = f"""Instruction: Solve problems step by step and give your answer between <ans> tags.
 
+Example 1:
 Q: What is 3+5?
-Let me solve this.
-I start with 3.
-I add 5 to it.
+First, I take 3.
+Then, I add 5.
 3 plus 5 equals 8.
-The answer is <ans>8</ans>
+<ans>8</ans>
 
+Example 2:
 Q: Capital of Germany?
-Let me solve this.
-Germany is a country in Europe.
+Germany is in Europe.
 Its capital city is Berlin.
-The answer is <ans>Berlin</ans>
+<ans>Berlin</ans>
 
+Example 3:
 Q: {question}
-Let me solve this.
 """
     done = False
     
@@ -176,9 +176,9 @@ def train_simple_reinforce(model, tokenizer, data, epochs=5, lr=1e-5, baseline=0
         print("-" * 50)
 
 def main():
-    model_name = "microsoft/phi-1"  # Only 350M parameters
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+    model_name = "EleutherAI/pythia-410m"  # Instruction-tuned
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
     
     # Set pad token to eos token if not set
     if tokenizer.pad_token is None:
@@ -186,7 +186,7 @@ def main():
         model.config.pad_token_id = model.config.eos_token_id
     
     # Train with simple REINFORCE
-    train_simple_reinforce(model, tokenizer, training_data, epochs=10, lr=1e-5, baseline=0.0)
+    train_simple_reinforce(model, tokenizer, training_data, epochs=5, lr=1e-5, baseline=0.0)
 
 if __name__ == "__main__":
     main()
