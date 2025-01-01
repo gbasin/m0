@@ -24,33 +24,30 @@ def parse_answer_from_chunk(chunk):
 def compute_reward(final_answer, ground_truth):
     return 1.0 if final_answer and final_answer.lower() == ground_truth.lower() else 0.0
 
-def rollout_episode(model, tokenizer, question, ground_truth, max_steps=5, step_tokens=20):
+def rollout_episode(model, tokenizer, question, ground_truth, max_steps=3, step_tokens=30):
     """
-    Multi-step rollout:
-    - Generate small CoT chunks
-    - Decide whether to 'continue' or 'answer' based on if we see 'Answer:'
-    - Return a list of transitions: (state_text, action_token_ids, reward).
+    Multi-step rollout with a small model
     """
     transitions = []
     
-    # Create a more structured prompt with examples
-    state_text = f"""Here are some examples:
+    # Simpler prompt format for a smaller model
+    state_text = f"""Let me solve problems step by step.
 
-Question: What is 3+5?
-Let's solve this step by step:
-1. Start with 3
-2. Add 5 to it
-3. 3 plus 5 equals 8
+Q: What is 3+5?
+Let me solve this.
+I start with 3.
+I add 5 to it.
+3 plus 5 equals 8.
 Answer: 8
 
-Question: Capital of Germany?
-Let's solve this step by step:
-1. Germany is a country in Europe
-2. Its capital city is Berlin
+Q: Capital of Germany?
+Let me solve this.
+Germany is a country in Europe.
+Its capital city is Berlin.
 Answer: Berlin
 
-Question: {question}
-Let's solve this step by step:
+Q: {question}
+Let me solve this.
 """
     done = False
     
@@ -69,10 +66,10 @@ Let's solve this step by step:
             attention_mask=attention_mask,
             max_new_tokens=step_tokens,
             do_sample=True,
-            temperature=0.7,  # Reduced temperature for more focused sampling
+            temperature=0.7,
             top_p=0.9,
             pad_token_id=tokenizer.pad_token_id,
-            no_repeat_ngram_size=3
+            repetition_penalty=1.2
         )
         
         # The newly generated tokens
@@ -97,12 +94,12 @@ Let's solve this step by step:
     
     if not done:
         print("No answer found in max steps")
-        transitions[-1] = (transitions[-1][0], transitions[-1][1], 0.0)
+        transitions[-1] = (transitions[-1][0], transitions[-1][1], -0.5)
     
     return transitions
 
 def compute_loss_for_episode(model, tokenizer, transitions, baseline=0.0):
-    total_loss = 0.0
+    total_loss = torch.tensor(0.0)  # Initialize as tensor
     for state_text, action_ids, reward in transitions:
         # Encode state with attention mask
         inputs = tokenizer(state_text, return_tensors="pt", padding=True)
@@ -133,11 +130,11 @@ def compute_loss_for_episode(model, tokenizer, transitions, baseline=0.0):
         nll = F.cross_entropy(
             action_logits.view(-1, action_logits.size(-1)),
             action_targets.view(-1),
-            reduction="sum"
+            reduction="mean"  # Changed from sum to mean
         )
         
-        advantage = (reward - baseline)
-        step_loss = advantage * nll
+        advantage = torch.tensor(reward - baseline)
+        step_loss = -advantage * nll  # Negative since we want to maximize reward
         print(f"Step loss: {step_loss.item():.3f} (reward={reward:.1f}, nll={nll.item():.3f})")
         total_loss += step_loss
     
@@ -177,9 +174,9 @@ def train_simple_reinforce(model, tokenizer, data, epochs=5, lr=1e-5, baseline=0
         print("-" * 50)
 
 def main():
-    model_name = "distilgpt2"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name)
+    model_name = "microsoft/phi-1"  # Only 350M parameters
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
     
     # Set pad token to eos token if not set
     if tokenizer.pad_token is None:
