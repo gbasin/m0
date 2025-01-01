@@ -1,2 +1,6 @@
 # Core dependencies
-pytest==7.4.3  # Testing framework 
+pytest==7.4.3  # Testing framework
+--extra-index-url https://download.pytorch.org/whl/cpu
+numpy<2.0
+torch==2.1.2
+transformers==4.37.2 
