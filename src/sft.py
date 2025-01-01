@@ -1,5 +1,25 @@
 import torch
 from transformers import TrainingArguments, Trainer
+import os
+from datetime import datetime
+import numpy as np
+from typing import Dict, Any
+
+def compute_metrics(eval_pred) -> Dict[str, float]:
+    """Compute metrics for logging"""
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)
+    
+    # Compute loss (we care about perplexity and loss)
+    loss = np.mean(np.where(labels != -100, 
+                           np.equal(predictions, labels).astype(np.float32),
+                           0.0))
+    perplexity = np.exp(-loss)
+    
+    return {
+        "loss": loss,
+        "perplexity": perplexity,
+    }
 
 def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, learning_rate=1e-5):
     """Train the model using supervised learning"""
@@ -18,28 +38,69 @@ def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, l
             return len(self.encodings.input_ids)
     
     # Create dataset
-    dataset = SimpleDataset(formatted_data, tokenizer)
+    full_dataset = SimpleDataset(formatted_data, tokenizer)
+    
+    # Split into train/val
+    train_size = int(0.9 * len(full_dataset))
+    val_size = len(full_dataset) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(full_dataset, [train_size, val_size])
+    
+    # Create output directory with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = f"./results/sft_{timestamp}"
+    os.makedirs(output_dir, exist_ok=True)
     
     # Define training arguments
     training_args = TrainingArguments(
-        output_dir="./results",
+        output_dir=output_dir,
         num_train_epochs=epochs,
         per_device_train_batch_size=batch_size,
         learning_rate=learning_rate,
         weight_decay=0.01,
-        logging_dir='./logs',
-        logging_steps=1,
-        save_total_limit=2,
+        logging_dir=f"{output_dir}/logs",
+        logging_steps=1,  # Log every step
+        save_strategy="epoch",  # Save at end of each epoch
+        evaluation_strategy="steps",  # Evaluate more frequently
+        eval_steps=10,  # Evaluate every 10 steps
+        save_total_limit=2,  # Keep only last 2 checkpoints
+        report_to=["tensorboard"],  # Log to tensorboard
+        logging_first_step=True,  # Log the first step
+        metric_for_best_model="loss",  # Save best model based on loss
+        load_best_model_at_end=True,  # Load best model at end of training
+        # Add validation split
+        do_eval=True,
+        per_device_eval_batch_size=batch_size,
+        # Better logging
+        remove_unused_columns=False,
+        label_names=["labels"],
+        include_inputs_for_metrics=True,
     )
     
     # Create trainer
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=dataset,
+        train_dataset=train_dataset,
+        eval_dataset=val_dataset,
+        compute_metrics=compute_metrics,  # Add metrics computation
     )
     
     # Train the model
+    print(f"\nStarting training...")
+    print(f"Output directory: {output_dir}")
+    print(f"Number of training examples: {len(train_dataset)}")
+    print(f"Number of validation examples: {len(val_dataset)}")
+    print(f"Batch size: {batch_size}")
+    print(f"Learning rate: {learning_rate}")
+    print(f"Epochs: {epochs}")
+    print(f"Tensorboard logs will be in: {training_args.logging_dir}")
+    
     trainer.train()
     
-    return model 
+    # Save final model and tokenizer
+    final_output_dir = f"{output_dir}/final"
+    model.save_pretrained(final_output_dir)
+    tokenizer.save_pretrained(final_output_dir)
+    print(f"\nSaved final model to {final_output_dir}")
+    
+    return model, final_output_dir 

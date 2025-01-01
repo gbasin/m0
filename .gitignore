@@ -18,6 +18,9 @@ dist/
 build/
 *.egg-info/
 
+# Training results
+results/
+
 # Unit test / coverage reports
 htmlcov/
 .coverage

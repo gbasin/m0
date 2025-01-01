@@ -17,7 +17,8 @@ def main():
     # First do supervised fine-tuning
     print("\nStarting supervised training...")
     formatted_data = create_training_data()
-    model = train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, learning_rate=1e-5)
+    model, save_path = train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, learning_rate=1e-5)
+    print(f"\nTraining complete! Model saved to: {save_path}")
     
     # Then optionally do RL fine-tuning
     # print("\nStarting RL training...")
