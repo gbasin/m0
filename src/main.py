@@ -26,30 +26,30 @@ def compute_reward(final_answer, ground_truth):
     print(f"Comparing answer: '{final_answer}' with ground truth: '{ground_truth}'")  # Debug print
     return 1.0 if final_answer and final_answer.lower() == ground_truth.lower() else 0.0
 
-def rollout_episode(model, tokenizer, question, ground_truth, max_steps=3, step_tokens=10):
+def rollout_episode(model, tokenizer, question, ground_truth, max_steps=3, step_tokens=20):
     """
     Multi-step rollout with a small model
     """
     transitions = []
     
-    # Simpler prompt format for a smaller model
-    state_text = f"""Instruction: Solve problems step by step and give your answer between <ans> tags.
+    # Format that better matches Pythia's training
+    state_text = f"""Below are examples of solving problems step by step. Each solution includes reasoning and an answer between <ans> tags.
 
-Example 1:
-Q: What is 3+5?
-First, I take 3.
-Then, I add 5.
-3 plus 5 equals 8.
-<ans>8</ans>
+Input: What is 3+5?
+Output:
+- Start with 3
+- Add 5
+- 3 + 5 = 8
+Therefore, <ans>8</ans>
 
-Example 2:
-Q: Capital of Germany?
-Germany is in Europe.
-Its capital city is Berlin.
-<ans>Berlin</ans>
+Input: What is the capital of Germany?
+Output:
+- Germany is a country in Europe
+- Its capital city is Berlin
+Therefore, <ans>Berlin</ans>
 
-Example 3:
-Q: {question}
+Input: {question}
+Output:
 """
     done = False
     
@@ -176,7 +176,7 @@ def train_simple_reinforce(model, tokenizer, data, epochs=5, lr=1e-5, baseline=0
         print("-" * 50)
 
 def main():
-    model_name = "EleutherAI/pythia-410m"  # Instruction-tuned
+    model_name = "EleutherAI/pythia-410m"  # Larger model for better capability
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name)
     
