@@ -16,12 +16,14 @@ training_data = [
 ]
 
 def parse_answer_from_chunk(chunk):
-    # If the chunk has 'Answer:', parse out the final answer
-    if "Answer:" in chunk:
-        return chunk.split("Answer:")[-1].strip()
+    # Look for answer between <ans> tags
+    if "<ans>" in chunk and "</ans>" in chunk:
+        answer = chunk.split("<ans>")[-1].split("</ans>")[0].strip()
+        return answer
     return None
 
 def compute_reward(final_answer, ground_truth):
+    print(f"Comparing answer: '{final_answer}' with ground truth: '{ground_truth}'")  # Debug print
     return 1.0 if final_answer and final_answer.lower() == ground_truth.lower() else 0.0
 
 def rollout_episode(model, tokenizer, question, ground_truth, max_steps=3, step_tokens=30):
@@ -38,13 +40,13 @@ Let me solve this.
 I start with 3.
 I add 5 to it.
 3 plus 5 equals 8.
-Answer: 8
+The answer is <ans>8</ans>
 
 Q: Capital of Germany?
 Let me solve this.
 Germany is a country in Europe.
 Its capital city is Berlin.
-Answer: Berlin
+The answer is <ans>Berlin</ans>
 
 Q: {question}
 Let me solve this.
