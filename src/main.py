@@ -39,6 +39,7 @@ def main():
     parser = argparse.ArgumentParser(description='Train language model with SFT and/or RL')
     parser.add_argument('--sft', action='store_true', help='Run supervised fine-tuning')
     parser.add_argument('--rl', action='store_true', help='Run reinforcement learning')
+    parser.add_argument('--from-scratch', action='store_true', help='Start training from base model instead of latest checkpoint')
     parser.add_argument('--model', default="EleutherAI/pythia-410m", help='Base model to use')
     parser.add_argument('--sft-epochs', type=int, default=10, help='Number of SFT epochs')
     parser.add_argument('--rl-epochs', type=int, default=3, help='Number of RL epochs')
@@ -53,15 +54,20 @@ def main():
         args.rl = True
     
     # Load model
-    checkpoint_dir = get_latest_checkpoint()
-    if checkpoint_dir:
-        print(f"\nLoading from checkpoint: {checkpoint_dir}")
-        tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
-        model = AutoModelForCausalLM.from_pretrained(checkpoint_dir, use_cache=False)
-    else:
+    if args.from_scratch:
         print(f"\nStarting fresh with model: {args.model}")
         tokenizer = AutoTokenizer.from_pretrained(args.model)
         model = AutoModelForCausalLM.from_pretrained(args.model, use_cache=False)
+    else:
+        checkpoint_dir = get_latest_checkpoint()
+        if checkpoint_dir:
+            print(f"\nLoading from checkpoint: {checkpoint_dir}")
+            tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
+            model = AutoModelForCausalLM.from_pretrained(checkpoint_dir, use_cache=False)
+        else:
+            print(f"\nNo checkpoint found, starting fresh with model: {args.model}")
+            tokenizer = AutoTokenizer.from_pretrained(args.model)
+            model = AutoModelForCausalLM.from_pretrained(args.model, use_cache=False)
     
     # Set pad token to eos token if not set
     if tokenizer.pad_token is None:
