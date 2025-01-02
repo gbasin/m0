@@ -1,17 +1,31 @@
 import torch
 import torch.nn.functional as F
 
-def parse_answer_from_chunk(chunk):
-    """Look for answer between <ans> tags"""
-    if "<ans>" in chunk and "</ans>" in chunk:
-        answer = chunk.split("<ans>")[-1].split("</ans>")[0].strip()
-        return answer
-    return None
+def parse_answer_from_chunk(chunk, previous_text=""):
+    """Look for answer between <ans> tags, handling split tags across chunks"""
+    # Combine with previous text to handle split tags
+    full_text = previous_text + chunk
+    
+    # Check if we have a complete answer
+    if "<ans>" in full_text and "</ans>" in full_text:
+        answer = full_text.split("<ans>")[-1].split("</ans>")[0].strip()
+        return answer, ""  # Reset buffer since we found complete answer
+    
+    # If we have an opening tag but no closing tag, keep the partial answer
+    if "<ans>" in full_text and "</ans>" not in full_text:
+        return None, full_text
+    
+    # If we have neither tag or only closing tag, just keep last few characters
+    # in case we're in the middle of a tag
+    return None, full_text[-10:] if len(full_text) > 10 else full_text
 
 def compute_reward(final_answer, ground_truth):
     """Compute reward for an answer"""
-    print(f"Comparing answer: '{final_answer}' with ground truth: '{ground_truth}'")  # Debug print
-    return 1.0 if final_answer and final_answer.lower() == ground_truth.lower() else 0.0
+    if final_answer is None:
+        return 0.0
+    
+    print(f"Comparing answer: '{final_answer}' with ground truth: '{ground_truth}'")
+    return 1.0 if final_answer.lower() == ground_truth.lower() else 0.0
 
 def rollout_episode(model, tokenizer, question, ground_truth, max_steps=3, step_tokens=20):
     """Multi-step rollout with a small model"""
@@ -37,6 +51,7 @@ Input: {question}
 Output:
 """
     done = False
+    answer_buffer = ""  # Keep track of partial answers across chunks
     
     print(f"\nStarting rollout for question: {question}")
     print(f"Ground truth answer: {ground_truth}")
@@ -66,8 +81,10 @@ Output:
         print(f"\nStep {step + 1}:")
         print(f"Generated chunk: {text_chunk}")
         
-        # Check if chunk has an answer
-        final_answer = parse_answer_from_chunk(text_chunk)
+        # Check for answer, passing in previous buffer
+        final_answer, new_buffer = parse_answer_from_chunk(text_chunk, answer_buffer)
+        answer_buffer = new_buffer
+        
         if final_answer is not None:
             r = compute_reward(final_answer, ground_truth)
             print(f"Found answer: {final_answer}")
@@ -81,7 +98,13 @@ Output:
     
     if not done:
         print("No answer found in max steps")
-        transitions[-1] = (transitions[-1][0], transitions[-1][1], -0.5)
+        # Check if we have a partial answer in the buffer
+        final_answer, _ = parse_answer_from_chunk(answer_buffer)
+        if final_answer is not None:
+            r = compute_reward(final_answer, ground_truth)
+            transitions[-1] = (transitions[-1][0], transitions[-1][1], r)
+        else:
+            transitions[-1] = (transitions[-1][0], transitions[-1][1], -0.5)
     
     return transitions
 
