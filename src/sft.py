@@ -59,9 +59,10 @@ def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, l
         weight_decay=0.01,
         logging_dir=f"{output_dir}/logs",
         logging_steps=1,  # Log every step
-        save_strategy="epoch",  # Save at end of each epoch
-        evaluation_strategy="steps",  # Evaluate more frequently
+        save_strategy="steps",  # Changed from "epoch" to "steps" to match eval_strategy
+        evaluation_strategy="steps",
         eval_steps=10,  # Evaluate every 10 steps
+        save_steps=10,  # Save every 10 steps to match eval_steps
         save_total_limit=2,  # Keep only last 2 checkpoints
         report_to=["tensorboard"],  # Log to tensorboard
         logging_first_step=True,  # Log the first step
@@ -72,8 +73,7 @@ def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, l
         per_device_eval_batch_size=batch_size,
         # Better logging
         remove_unused_columns=False,
-        label_names=["labels"],
-        include_inputs_for_metrics=True,
+        label_names=["labels"]
     )
     
     # Create trainer
