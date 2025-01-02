@@ -40,11 +40,11 @@ def main():
     if checkpoint_dir:
         print(f"\nLoading from checkpoint: {checkpoint_dir}")
         tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
-        model = AutoModelForCausalLM.from_pretrained(checkpoint_dir)
+        model = AutoModelForCausalLM.from_pretrained(checkpoint_dir, use_cache=False)
     else:
         print(f"\nStarting fresh with model: {model_name}")
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForCausalLM.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(model_name, use_cache=False)
     
     # Set pad token to eos token if not set
     if tokenizer.pad_token is None:

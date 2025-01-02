@@ -8,17 +8,22 @@ from typing import Dict, Any
 def compute_metrics(eval_pred) -> Dict[str, float]:
     """Compute metrics for logging"""
     logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=-1)
     
-    # Compute loss (we care about perplexity and loss)
-    loss = np.mean(np.where(labels != -100, 
-                           np.equal(predictions, labels).astype(np.float32),
-                           0.0))
-    perplexity = np.exp(-loss)
+    # Convert to numpy for consistent handling
+    if isinstance(logits, (list, tuple)):
+        logits = np.array(logits)
+    if isinstance(labels, (list, tuple)):
+        labels = np.array(labels)
+        
+    # Compute simple loss using numpy to avoid shape issues
+    labels_mask = labels != -100
+    correct = (logits.argmax(axis=-1) == labels) & labels_mask
+    total = labels_mask.sum()
+    accuracy = correct.sum() / total if total > 0 else 0
     
     return {
-        "loss": loss,
-        "perplexity": perplexity,
+        "eval_accuracy": float(accuracy),
+        "eval_perplexity": float(np.exp(np.mean(logits[labels_mask])))
     }
 
 def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, learning_rate=1e-5):
@@ -27,12 +32,12 @@ def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, l
     # Create a simple dataset
     class SimpleDataset(torch.utils.data.Dataset):
         def __init__(self, texts, tokenizer):
-            # Ensure consistent padding across all examples
+            # Reduce sequence length but keep it reasonable for examples
             self.encodings = tokenizer(
                 texts, 
                 truncation=True, 
-                padding='max_length',  # Changed from True to 'max_length'
-                max_length=512, 
+                padding='max_length',
+                max_length=256,  # Reduced from 512
                 return_tensors="pt"
             )
         
@@ -62,29 +67,32 @@ def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, l
         output_dir=output_dir,
         num_train_epochs=epochs,
         per_device_train_batch_size=batch_size,
-        gradient_accumulation_steps=2,  # Reduced from 4 to see updates more frequently
+        gradient_accumulation_steps=1,
         learning_rate=learning_rate,
         weight_decay=0.01,
         logging_dir=f"{output_dir}/logs",
-        logging_steps=1,  # Log every step to see progress
-        save_strategy="epoch",  # Only save at end of epochs
-        evaluation_strategy="epoch",  # Only evaluate at end of epochs
-        save_total_limit=2,  # Keep only last 2 checkpoints
+        logging_steps=1,
+        save_strategy="no",
+        evaluation_strategy="steps",
+        eval_steps=50,  # Evaluate less frequently
+        save_total_limit=1,
         report_to=["tensorboard"],
         logging_first_step=True,
-        load_best_model_at_end=True,
+        load_best_model_at_end=False,
         do_eval=True,
-        per_device_eval_batch_size=batch_size,
-        remove_unused_columns=False,
+        per_device_eval_batch_size=1,  # Keep eval batch size at 1 to avoid shape issues
+        remove_unused_columns=True,
         label_names=["labels"],
         max_grad_norm=1.0,
-        warmup_ratio=0.0,  # No warmup to speed up training
+        warmup_ratio=0.0,
         save_safetensors=True,
-        resume_from_checkpoint=True,
+        resume_from_checkpoint=False,
         optim="adamw_torch",
         dataloader_pin_memory=False,
-        group_by_length=True,  # Speeds up training by grouping similar lengths
-        length_column_name="length"
+        group_by_length=False,
+        gradient_checkpointing=True,
+        torch_compile=False,
+        prediction_loss_only=True  # Only compute loss during eval to avoid metric issues
     )
     
     # Create trainer
@@ -93,7 +101,7 @@ def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, l
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        compute_metrics=compute_metrics,  # Add metrics computation
+        compute_metrics=compute_metrics,
     )
     
     # Train the model
