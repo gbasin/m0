@@ -27,7 +27,14 @@ def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, l
     # Create a simple dataset
     class SimpleDataset(torch.utils.data.Dataset):
         def __init__(self, texts, tokenizer):
-            self.encodings = tokenizer(texts, truncation=True, padding=True, max_length=512, return_tensors="pt")
+            # Ensure consistent padding across all examples
+            self.encodings = tokenizer(
+                texts, 
+                truncation=True, 
+                padding='max_length',  # Changed from True to 'max_length'
+                max_length=512, 
+                return_tensors="pt"
+            )
         
         def __getitem__(self, idx):
             item = {key: val[idx] for key, val in self.encodings.items()}
@@ -59,21 +66,23 @@ def train_supervised(model, tokenizer, formatted_data, epochs=3, batch_size=4, l
         weight_decay=0.01,
         logging_dir=f"{output_dir}/logs",
         logging_steps=1,  # Log every step
-        save_strategy="steps",  # Changed from "epoch" to "steps" to match eval_strategy
+        save_strategy="steps",
         evaluation_strategy="steps",
-        eval_steps=10,  # Evaluate every 10 steps
-        save_steps=10,  # Save every 10 steps to match eval_steps
+        eval_steps=50,  # Reduced frequency - evaluate every 50 steps
+        save_steps=50,  # Save at same frequency as eval
         save_total_limit=2,  # Keep only last 2 checkpoints
-        report_to=["tensorboard"],  # Log to tensorboard
-        logging_first_step=True,  # Log the first step
-        metric_for_best_model="loss",  # Save best model based on loss
-        load_best_model_at_end=True,  # Load best model at end of training
-        # Add validation split
+        report_to=["tensorboard"],
+        logging_first_step=True,
+        metric_for_best_model="loss",
+        load_best_model_at_end=True,
         do_eval=True,
         per_device_eval_batch_size=batch_size,
-        # Better logging
         remove_unused_columns=False,
-        label_names=["labels"]
+        label_names=["labels"],
+        max_grad_norm=1.0,
+        warmup_steps=10,  # Reduced warmup steps given small dataset
+        save_safetensors=True,
+        resume_from_checkpoint=True
     )
     
     # Create trainer

@@ -117,7 +117,97 @@ training_data = [
     
     {"question": "If box A is twice as large as box B, and box B is three times as large as box C, how many box C's would fit in box A?",
      "answer": "6",
-     "steps": "- Box A is 2 times box B\n- Box B is 3 times box C\n- Therefore box A is 2 × 3 = 6 times box C\n- So 6 box C's would fit in box A"}
+     "steps": "- Box A is 2 times box B\n- Box B is 3 times box C\n- Therefore box A is 2 × 3 = 6 times box C\n- So 6 box C's would fit in box A"},
+    
+    # Chemistry
+    {"question": "What is the molecular formula for water?",
+     "answer": "H2O",
+     "steps": "- Water consists of hydrogen and oxygen\n- Contains 2 hydrogen atoms\n- Contains 1 oxygen atom\n- Therefore molecular formula is H2O"},
+    
+    {"question": "If a solution has pH 3, is it acidic, basic, or neutral?",
+     "answer": "Acidic",
+     "steps": "- pH scale runs from 0 to 14\n- pH 7 is neutral\n- pH < 7 is acidic\n- pH 3 < 7\n- Therefore solution is acidic"},
+
+    # Physics
+    {"question": "If a car accelerates from 0 to 60 mph in 6 seconds, what is its average acceleration in mph/s?",
+     "answer": "10 mph/s",
+     "steps": "- Change in velocity = 60 mph - 0 mph = 60 mph\n- Time taken = 6 seconds\n- Average acceleration = change in velocity ÷ time\n- 60 ÷ 6 = 10\n- Therefore acceleration is 10 mph/s"},
+    
+    {"question": "What happens to water's volume when it freezes?",
+     "answer": "It expands",
+     "steps": "- Water is unique among substances\n- When water molecules freeze, they form a crystalline structure\n- This structure has more space between molecules\n- Therefore water expands when freezing"},
+
+    # Biology
+    {"question": "What process do plants use to make their own food using sunlight?",
+     "answer": "Photosynthesis",
+     "steps": "- Plants need to make their own food\n- They use sunlight as energy source\n- They convert CO2 and water into glucose\n- This process is called photosynthesis"},
+    
+    {"question": "How many chambers does a human heart have?",
+     "answer": "4",
+     "steps": "- Heart is divided into left and right sides\n- Each side has an upper chamber (atrium)\n- Each side has a lower chamber (ventricle)\n- Therefore total chambers = 2 + 2 = 4"},
+
+    # Computer Science
+    {"question": "What is the binary representation of decimal 9?",
+     "answer": "1001",
+     "steps": "- Convert to binary by dividing by 2\n- 9 ÷ 2 = 4 remainder 1\n- 4 ÷ 2 = 2 remainder 0\n- 2 ÷ 2 = 1 remainder 0\n- 1 ÷ 2 = 0 remainder 1\n- Read remainders bottom-up: 1001"},
+    
+    {"question": "What does CPU stand for?",
+     "answer": "Central Processing Unit",
+     "steps": "- CPU is main processor of computer\n- C stands for Central\n- P stands for Processing\n- U stands for Unit"},
+
+    # Geography
+    {"question": "Which continent is the largest by land area?",
+     "answer": "Asia",
+     "steps": "- Compare continents by size\n- Asia: 44.5 million km²\n- Africa: 30.4 million km²\n- Others are smaller\n- Therefore Asia is largest"},
+    
+    {"question": "What is the longest river in the world?",
+     "answer": "Nile River",
+     "steps": "- Nile River length: 6,650 km\n- Amazon River length: 6,400 km\n- Nile is longer than Amazon\n- All other rivers are shorter\n- Therefore Nile is longest"},
+
+    # Music Theory
+    {"question": "How many semitones are in an octave?",
+     "answer": "12",
+     "steps": "- Start at any note (e.g., C)\n- Count semitones: C, C#, D, D#, E, F, F#, G, G#, A, A#, B\n- Return to starting note (C)\n- Total count is 12"},
+    
+    {"question": "What are the notes in a C major chord?",
+     "answer": "C, E, G",
+     "steps": "- Start with root note C\n- Major chord uses root, major third, perfect fifth\n- From C: count up 4 semitones to E\n- From E: count up 3 semitones to G\n- Therefore notes are C, E, G"},
+
+    # Literature
+    {"question": "Who wrote 'Romeo and Juliet'?",
+     "answer": "William Shakespeare",
+     "steps": "- Famous play from Elizabethan era\n- Written in late 16th century\n- Author was English playwright\n- Written by William Shakespeare"},
+    
+    {"question": "What literary device is 'The wind whispered'?",
+     "answer": "Personification",
+     "steps": "- Wind is being given human qualities\n- Whispering is a human action\n- Giving human traits to non-human things\n- This is called personification"},
+
+    # Financial Math
+    {"question": "If you invest $100 at 5% annual interest, how much will you have after 1 year?",
+     "answer": "$105",
+     "steps": "- Principal amount = $100\n- Interest rate = 5%\n- Interest earned = $100 × 0.05 = $5\n- Final amount = Principal + Interest\n- Therefore $100 + $5 = $105"},
+    
+    {"question": "What is the break-even point if you sell items for $10 each, have fixed costs of $1000, and variable costs of $6 per item?",
+     "answer": "250 items",
+     "steps": "- Revenue per item = $10\n- Variable cost per item = $6\n- Contribution margin = $10 - $6 = $4 per item\n- Fixed costs = $1000\n- Break-even = Fixed costs ÷ Contribution margin\n- Therefore 1000 ÷ 4 = 250 items"},
+
+    # Sports
+    {"question": "How many players are on a standard soccer team during a match?",
+     "answer": "11",
+     "steps": "- Each team has one goalkeeper\n- Plus ten field players\n- Total players = 1 + 10\n- Therefore 11 players"},
+    
+    {"question": "How many points is a touchdown worth in American football?",
+     "answer": "6",
+     "steps": "- Touchdown is main scoring play\n- Worth 6 points\n- Extra point or 2-point conversion possible after\n- But touchdown alone is 6 points"},
+
+    # Historical Dates
+    {"question": "In what year did World War II end?",
+     "answer": "1945",
+     "steps": "- War in Europe ended in May 1945\n- Japan surrendered in August 1945\n- Official end was September 2, 1945\n- Therefore war ended in 1945"},
+    
+    {"question": "When was the Declaration of Independence signed?",
+     "answer": "1776",
+     "steps": "- American colonies declared independence\n- Document was approved July 4th\n- Signing began on that date\n- Year was 1776"}
 ]
 
 def format_example(example):
